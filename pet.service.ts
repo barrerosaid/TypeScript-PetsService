@@ -103,7 +103,8 @@ export class PetService {
     //  key => sortable field
 
     // ADDED: sorted fields that can be used
-    const allowedSortFields = ['cost', 'age','name','type'];
+    //const allowedSortFields = ['cost', 'age','name','type'];
+    const allowedSortFields = new Set<string>(['cost','age','name','type']);
 
     if(sort){
       // ADDED: eg order: +/-
@@ -111,8 +112,8 @@ export class PetService {
       // ADDED: eg key: 'cost','age'
       const key = sort.slice(1);
 
-      if (key === 'updatedAt' || key === 'createdAt') {
-        throw new BadRequestException('Sorting with this key is not allowed.');
+      if (!allowedSortFields.has(key)) {
+        throw new BadRequestException(`Sorting with ${key} is not allowed.`);
       }
       
       // ADDED: if order is '-' then desc otherwise it should be asc

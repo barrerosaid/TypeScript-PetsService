@@ -424,13 +424,13 @@ describe('Pet API', () => {
     //.expect(HttpStatus.OK)
     .expect(HttpStatus.BAD_REQUEST) // Expect failure
     .then((res) => {
-      expect(res.body.message).toContain('Sorting with this key is not allowed');
+      expect(res.body.message).toContain('Sorting with createdAt is not allowed');
     }),
     request(app.getHttpServer())
     .get(`/api/v1/pet?&sort=+createdAt`)
     .expect(HttpStatus.BAD_REQUEST) // Expect failure
     .then((res) => {
-      expect(res.body.message).toContain('Sorting with this key is not allowed');
+      expect(res.body.message).toContain('Sorting with createdAt is not allowed');
     }),
     /*
     .then((res) => {
@@ -477,13 +477,13 @@ it('should not be able to GET an array of sorted pets by updatedAt', async () =>
     .get(`/api/v1/pet?&sort=-updatedAt`)
     .expect(HttpStatus.BAD_REQUEST)
     .then((res) => {
-      expect(res.body.message).toContain('Sorting with this key is not allowed');
+      expect(res.body.message).toContain('Sorting with updatedAt is not allowed');
     }),
     request(app.getHttpServer())
     .get(`/api/v1/pet?&sort=+updatedAt`)
     .expect(HttpStatus.BAD_REQUEST)
     .then((res) => {
-      expect(res.body.message).toContain('Sorting with this key is not allowed');
+      expect(res.body.message).toContain('Sorting with updatedAt is not allowed');
     }),
     /*
     .then((res) => {
