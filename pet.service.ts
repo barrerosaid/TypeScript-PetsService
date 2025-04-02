@@ -26,6 +26,7 @@ export class PetService {
     Helper function to convert passed query into mongoose filter object
   */
   private parseFilterStringToFilterQuery(filter: PetQueryFilter): { $eq?: number; $gt?: number; $lt?: number } {
+    //ADDED: gte and lte
     const allowedOperators = ['eq', 'gt', 'lt','gte','lte'];
     const filterObj: any = {};
     if (!filter) {
@@ -34,9 +35,8 @@ export class PetService {
     allowedOperators.forEach((operator) => {
       if (filter[operator] !== undefined) {
         // convert it into the mongoose filter style (e.g. age equals 5 is "age: {$eq: 5}")
-        //ADDED
+        //ADDED: Convert to number
         const value = isNaN(Number(filter[operator])) ? filter[operator] : Number(filter[operator]);
-
         filterObj['$' + operator] = value;
       }
     });
@@ -68,19 +68,17 @@ export class PetService {
       findFilter.name = nameFilter;
     }
 
-
-    // ADDED:
+    // ADDED: type filter to apply to find filter:
     const typeFilter = this.parseFilterStringToFilterQuery(filter.type);
     if(Object.keys(typeFilter).length >0){
       findFilter.type = typeFilter;
     }
 
+    // ADDED: cost filter to apply to find filter:
     const costFilter = this.parseFilterStringToFilterQuery(filter.cost);
     if(Object.keys(costFilter).length >0){
       findFilter.cost = costFilter;
     }
-
-    //console.log('HELP ME (5) Final MongoDB Query Filter:', JSON.stringify(findFilter, null, 2));
 
     // when executed, this query should represent the total number of documents in the collection
     const totalCountQuery = this.petModel.countDocuments();
@@ -103,61 +101,26 @@ export class PetService {
     // format: +key
     //  +/- => asc/desc
     //  key => sortable field
-    //if (sort) {
-    //  findQuery.sort({ age: 'asc' });
-    //}
 
-
-    // ADDED:
+    // ADDED: sorted fields that can be used
     const allowedSortFields = ['cost', 'age','name','type'];
-    //const sortQuery: Record<string, 'asc' | 'desc'> ={};
 
     if(sort){
-      /*
-      const[order, key] = [sort.charAt(0), sort.slice(1)];
-
-      if(allowedSortFields.includes(key)){
-        sortQuery[key] = order ==='+'? 'asc':'desc';
-      }
-        */
-      console.log(`Sort order character: '${sort}'`);
+      // ADDED: eg order: +/-
       const order = sort.charAt(0);
-      console.log(`Sort order character: '${order}'`);
+      // ADDED: eg key: 'cost','age'
       const key = sort.slice(1);
-      console.log(`Sort order character: '${key}'`);
 
       if (key === 'updatedAt' || key === 'createdAt') {
         throw new BadRequestException('Sorting with this key is not allowed.');
       }
-/*
-      if (!allowedSortFields.includes(key)) {
-        throw new Error(`Sorting by ${key} is not allowed.`);
-      }
-*/
- //     console.log('Final MongoDB Query Sort:', { [key]: order === '+' ? 1 : -1 });
-      //if (!allowedSortFields.includes(key)) {
-      //  throw new Error(`Sorting by ${key} is not allowed.`);
-      //}
-/*
-      if (allowedSortFields.includes(key)) {
-          findQuery.sort({ [key]: order === '+' ? 1 : -1 });
-      }
-*/
-const sortOrder = (order === '-') ? 'desc' : 'asc';
-
-console.log('Final MongoDB Query Sort:', { [key]: sortOrder });
-
-// Ensure only one sorting criteria is applied
-findQuery.sort({ [key]: sortOrder });
+      
+      // ADDED: if order is '-' then desc otherwise it should be asc
+      const sortOrder = (order === '-') ? 'desc' : 'asc';
+      
+      // ADDED: Ensure only one sorting criteria is applied
+      findQuery.sort({ [key]: sortOrder });
     }
-
-    //if(Object.keys(sortQuery).length>0){
-    //findQuery.skip(offset).limit(limit);
-    //  findQuery.sort(sortQuery);
-    //}
-
-
-
 
     // execute the queries and then return the counts and data
     return Promise.all([totalCountQuery.exec(), filteredCountQuery.exec(), findQuery.exec()]).then((results) => {
@@ -188,15 +151,14 @@ findQuery.sort({ [key]: sortOrder });
     });
   }
 
+  // ADDED: Delete function following example for Update and using provided DTO and mongoose findByIdAndDelete function
   async delete(petId: string) : Promise<PetDto> {
     return this.petModel.findByIdAndDelete(petId).then((pet) => {
       if(!pet){
         return;
-        //throw new NotFoundException('Pet with ID ${petId} not found');
       }
       return pet.toDto();
     });
 
-    //throw new Error('Method not implemented.');
   }
 }
