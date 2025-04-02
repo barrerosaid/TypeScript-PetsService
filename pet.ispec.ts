@@ -398,97 +398,114 @@ describe('Pet API', () => {
 
 
  it('should not be able to GET an array of sorted pets by createdAt', async () => {
-   // create a list of pets
-   const pets: Array<Promise<PetDto>> = [];
-   // use large count because there's a chance of randomly achieving sort
-   for (let i = 0; i < 100; i += 1) {
-     // randomly bump the date because the collection ordering is undefined but helper uses increasing 'now'
-     const randomDate = new Date();
-     randomDate.setDate(randomDate.getDate() + Math.round(31 * Math.random()));
+  // create a list of pets
+  const pets: Array<Promise<PetDto>> = [];
+  // use large count because there's a chance of randomly achieving sort
+  for (let i = 0; i < 100; i += 1) {
+    // randomly bump the date because the collection ordering is undefined but helper uses increasing 'now'
+    const randomDate = new Date();
+    randomDate.setDate(randomDate.getDate() + Math.round(31 * Math.random()));
 
+    pets.push(
+      helper.randomPet({
+        cost: i + 10,
+        createdAt: randomDate,
+      }),
+    );
+    // make sure to wait between each creation to make sure there is a testable time span between each pet
+    await wait(10);
+  }
+  await Promise.all(pets);
 
-     pets.push(
-       helper.randomPet({
-         cost: i + 10,
-         createdAt: randomDate,
-       }),
-     );
-     // make sure to wait between each creation to make sure there is a testable time span between each pet
-     await wait(10);
-   }
-   await Promise.all(pets);
+  // query them via API
+  return Promise.all([
+    request(app.getHttpServer())
+    .get(`/api/v1/pet?&sort=-createdAt`)
+    //.expect(HttpStatus.OK)
+    .expect(HttpStatus.BAD_REQUEST) // Expect failure
+    .then((res) => {
+      expect(res.body.message).toContain('Sorting with this key is not allowed');
+    }),
+    request(app.getHttpServer())
+    .get(`/api/v1/pet?&sort=+createdAt`)
+    .expect(HttpStatus.BAD_REQUEST) // Expect failure
+    .then((res) => {
+      expect(res.body.message).toContain('Sorting with this key is not allowed');
+    }),
+    /*
+    .then((res) => {
+      expect(res.body.totalCount).toEqual(pets.length);
+      expect(res.body.filteredCount).toEqual(pets.length);
+      expect(res.body.data.length).toEqual(pets.length);
+      // should not be able to sort on dates
+      expect(isDescending(res.body.data, 'createdAt')).not.toBe(true);
+    }),
+    request(app.getHttpServer())
+    .get(`/api/v1/pet?&sort=+createdAt`)
+    .expect(HttpStatus.OK)
+    .then((res) => {
+      expect(res.body.totalCount).toEqual(pets.length);
+      expect(res.body.filteredCount).toEqual(pets.length);
+      expect(res.body.data.length).toEqual(pets.length);
+      // should not be able to sort on dates
+      expect(isAscending(res.body.data, 'createdAt')).not.toBe(true);
+    }),
+    */
+  ]);
+});
 
+it('should not be able to GET an array of sorted pets by updatedAt', async () => {
+  // create a list of pets
+  const pets: Array<Promise<PetDto>> = [];
+  for (let i = 0; i < 100; i += 1) {
+    const randomDate = new Date();
+    randomDate.setDate(randomDate.getDate() + Math.round(31 * Math.random()));
 
-   // query them via API
-   return Promise.all([
-     request(app.getHttpServer())
-     .get(`/api/v1/pet?&sort=-createdAt`)
-     .expect(HttpStatus.OK)
-     .then((res) => {
-       expect(res.body.totalCount).toEqual(pets.length);
-       expect(res.body.filteredCount).toEqual(pets.length);
-       expect(res.body.data.length).toEqual(pets.length);
-       // should not be able to sort on dates
-       expect(isDescending(res.body.data, 'createdAt')).not.toBe(true);
-     }),
-     request(app.getHttpServer())
-     .get(`/api/v1/pet?&sort=+createdAt`)
-     .expect(HttpStatus.OK)
-     .then((res) => {
-       expect(res.body.totalCount).toEqual(pets.length);
-       expect(res.body.filteredCount).toEqual(pets.length);
-       expect(res.body.data.length).toEqual(pets.length);
-       // should not be able to sort on dates
-       expect(isAscending(res.body.data, 'createdAt')).not.toBe(true);
-     }),
-   ]);
- });
+    pets.push(
+      helper.randomPet({
+        cost: i + 10,
+        updatedAt: randomDate,
+      }),
+    ); // make sure to wait between each creation to make sure there is a testable time span between each pet
+    await wait(10);
+  }
+  await Promise.all(pets);
 
-
- it('should not be able to GET an array of sorted pets by updatedAt', async () => {
-   // create a list of pets
-   const pets: Array<Promise<PetDto>> = [];
-   for (let i = 0; i < 100; i += 1) {
-     const randomDate = new Date();
-     randomDate.setDate(randomDate.getDate() + Math.round(31 * Math.random()));
-
-
-     pets.push(
-       helper.randomPet({
-         cost: i + 10,
-         updatedAt: randomDate,
-       }),
-     ); // make sure to wait between each creation to make sure there is a testable time span between each pet
-     await wait(10);
-   }
-   await Promise.all(pets);
-
-
-   // query them via API
-   return Promise.all([
-     request(app.getHttpServer())
-     .get(`/api/v1/pet?&sort=-updatedAt`)
-     .expect(HttpStatus.OK)
-     .then((res) => {
-       expect(res.body.totalCount).toEqual(pets.length);
-       expect(res.body.filteredCount).toEqual(pets.length);
-       expect(res.body.data.length).toEqual(pets.length);
-       // should not be able to sort on dates
-       expect(isDescending(res.body.data, 'updatedAt')).not.toBe(true);
-     }),
-     request(app.getHttpServer())
-     .get(`/api/v1/pet?&sort=+updatedAt`)
-     .expect(HttpStatus.OK)
-     .then((res) => {
-       expect(res.body.totalCount).toEqual(pets.length);
-       expect(res.body.filteredCount).toEqual(pets.length);
-       expect(res.body.data.length).toEqual(pets.length);
-       // should not be able to sort on dates
-       expect(isAscending(res.body.data, 'updatedAt')).not.toBe(true);
-     }),
-   ]);
- });
-
+  // query them via API
+  return Promise.all([
+    request(app.getHttpServer())
+    .get(`/api/v1/pet?&sort=-updatedAt`)
+    .expect(HttpStatus.BAD_REQUEST)
+    .then((res) => {
+      expect(res.body.message).toContain('Sorting with this key is not allowed');
+    }),
+    request(app.getHttpServer())
+    .get(`/api/v1/pet?&sort=+updatedAt`)
+    .expect(HttpStatus.BAD_REQUEST)
+    .then((res) => {
+      expect(res.body.message).toContain('Sorting with this key is not allowed');
+    }),
+    /*
+    .then((res) => {
+      expect(res.body.totalCount).toEqual(pets.length);
+      expect(res.body.filteredCount).toEqual(pets.length);
+      expect(res.body.data.length).toEqual(pets.length);
+      // should not be able to sort on dates
+      expect(isDescending(res.body.data, 'updatedAt')).not.toBe(true);
+    }),
+    request(app.getHttpServer())
+    .get(`/api/v1/pet?&sort=+updatedAt`)
+    .expect(HttpStatus.BAD_REQUEST)
+    .then((res) => {
+      expect(res.body.totalCount).toEqual(pets.length);
+      expect(res.body.filteredCount).toEqual(pets.length);
+      expect(res.body.data.length).toEqual(pets.length);
+      // should not be able to sort on dates
+      expect(isAscending(res.body.data, 'updatedAt')).not.toBe(true);
+    }),
+    */
+  ]);
+});
 
  it('should GET an array of pets with cost eq to 2000', async () => {
    // create a list of pets
